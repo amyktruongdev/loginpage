@@ -1,0 +1,6 @@
+application\Passwords.class
+application\TestDB.class
+application\Main.class
+application\DatabaseConnection.class
+application\User.class
+application\AuthService.class
