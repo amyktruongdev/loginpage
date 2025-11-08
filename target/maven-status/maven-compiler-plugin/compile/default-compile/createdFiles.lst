@@ -1,6 +1,7 @@
-application\Passwords.class
-application\TestDB.class
-application\Main.class
-application\DatabaseConnection.class
-application\User.class
-application\AuthService.class
+application/AuthService.class
+application/Passwords.class
+application/BlogService.class
+application/TestDB.class
+application/DatabaseConnection.class
+application/Main.class
+application/User.class

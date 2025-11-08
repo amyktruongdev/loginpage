@@ -2,58 +2,55 @@ package application;
 import java.sql.*;
 
 public class AuthService {
-    private Connection connection;
-
+    
     public AuthService() throws SQLException {
-        this.connection = DatabaseConnection.getConnection();
+        // Don't store connection - create new one for each operation
     }
-
+    
     public boolean login(String username, String password) throws SQLException {
-        return authenticateUser(username, password);
+        // Use try-with-resources to automatically close connection
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT username FROM user WHERE username = ? AND password = ?";
+            try (PreparedStatement statement = conn.prepareStatement(sql)) {
+                statement.setString(1, username);
+                statement.setString(2, password);
+                ResultSet resultSet = statement.executeQuery();
+                return resultSet.next();
+            }
+        }
     }
-
+    
     public boolean register(User user) throws SQLException {
-        return registerUser(user);
-    }
+        // Use try-with-resources to automatically close connection
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            // Check for duplicates
+            if (checkDuplicate(conn, "username", user.getUsername())) {
+                throw new SQLException("Username already exists");
+            }
+            if (checkDuplicate(conn, "email", user.getEmail())) {
+                throw new SQLException("Email already registered");
+            }
+            if (checkDuplicate(conn, "phone", user.getPhone())) {
+                throw new SQLException("Phone already registered");
+            }
 
-    private boolean authenticateUser(String username, String password) throws SQLException {
-        String sql = "SELECT username FROM user WHERE username = ? AND password = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, username);
-            statement.setString(2, password);
-            ResultSet resultSet = statement.executeQuery();
-            return resultSet.next();
+            // Insert new user
+            String sql = "INSERT INTO user (username, password, firstName, lastName, email, phone) VALUES (?, ?, ?, ?, ?, ?)";
+            try (PreparedStatement statement = conn.prepareStatement(sql)) {
+                statement.setString(1, user.getUsername());
+                statement.setString(2, user.getPassword());
+                statement.setString(3, user.getFirstName());
+                statement.setString(4, user.getLastName());
+                statement.setString(5, user.getEmail());
+                statement.setString(6, user.getPhone());
+                return statement.executeUpdate() > 0;
+            }
         }
     }
 
-    private boolean registerUser(User user) throws SQLException {
-        if (checkDuplicateField("username", user.getUsername())) {
-            throw new SQLException("Username already exists");
-        }
-        if (checkDuplicateField("email", user.getEmail())) {
-            throw new SQLException("Email already registered");
-        }
-        if (checkDuplicateField("phone", user.getPhone())) {
-            throw new SQLException("Phone number already registered");
-        }
-
-        String sql = "INSERT INTO user (username, password, firstName, lastName, email, phone) VALUES (?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, user.getUsername());
-            statement.setString(2, user.getPassword());
-            statement.setString(3, user.getFirstName());
-            statement.setString(4, user.getLastName());
-            statement.setString(5, user.getEmail());
-            statement.setString(6, user.getPhone());
-
-            int affectedRows = statement.executeUpdate();
-            return affectedRows > 0;
-        }
-    }
-
-    private boolean checkDuplicateField(String fieldName, String value) throws SQLException {
-        String sql = "SELECT " + fieldName + " FROM user WHERE " + fieldName + " = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+    private boolean checkDuplicate(Connection conn, String field, String value) throws SQLException {
+        String sql = "SELECT " + field + " FROM user WHERE " + field + " = ?";
+        try (PreparedStatement statement = conn.prepareStatement(sql)) {
             statement.setString(1, value);
             ResultSet resultSet = statement.executeQuery();
             return resultSet.next();

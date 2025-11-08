@@ -1,13 +1,6 @@
 package application;
 public class User {
-    private String username;
-    private String password;
-    private String firstName;
-    private String lastName;
-    private String email;
-    private String phone;
-
-    public User() {}
+    private String username, password, firstName, lastName, email, phone;
 
     public User(String username, String password, String firstName, String lastName, String email, String phone) {
         this.username = username;

@@ -9,10 +9,17 @@ import java.sql.SQLException;
 
 public class Main extends Application {
     
+    private AuthService authService;
 
     @Override
     public void start(Stage primaryStage) {
-       
+        try {
+            authService = new AuthService();
+        } catch (SQLException e) {
+            showAlert("Database Error", "Cannot connect to database: " + e.getMessage());
+            return;
+        }
+        
         primaryStage.setTitle("Login Page");
         Scene loginScene = createLoginScene(primaryStage);
         Scene createScene = createCreateAccountScene(primaryStage, loginScene);
@@ -57,7 +64,15 @@ public class Main extends Application {
             
             try {
                 boolean ok = DatabaseConnection.login(username, password);
-                messageLabel.setText(ok ? " Login Successful!" : " Invalid username or password.");
+                if (ok) {
+                    messageLabel.setText("Login Successful");
+                    // Navigate to blog insertion interface
+                    Scene blogScene = createBlogInsertionScene(stage, username);
+                    stage.setTitle("Insert Blog - " + username);
+                    stage.setScene(blogScene);
+                } else {
+                    messageLabel.setText("Invalid username or password.");
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 messageLabel.setText("Database error. Please try again.");
@@ -102,32 +117,38 @@ public class Main extends Application {
         TextField firstNameField = new TextField();
         TextField lastNameField = new TextField();
         TextField emailField = new TextField();
-        emailField.setPromptText("example@email.com");
         TextField phoneField = new TextField();
-        phoneField.setPromptText("xxx-xxx-xxxx");
         
         Button createButton = new Button("Create Account");
         Button backButton = new Button("Back to Login");
         Label messageLabel = new Label();
 
         createButton.setOnAction(event -> {
-    String username = usernameField.getText().trim();
-    String password = passwordField.getText();
-    String confirm  = confirmPasswordField.getText();
-    String first    = firstNameField.getText().trim();
-    String last     = lastNameField.getText().trim();
-    String email    = emailField.getText().trim();
-    String phone    = phoneField.getText().trim();
-
-            if (username.isEmpty() || password.isEmpty() || confirm.isEmpty()
-            || first.isEmpty() || last.isEmpty() || email.isEmpty() || phone.isEmpty()) {
-        messageLabel.setText("Please complete all required fields.");
-        return;
-    }
+            String username = usernameField.getText().trim();
+            String password = passwordField.getText();
+            String confirmPassword = confirmPasswordField.getText();
+            String firstName = firstNameField.getText().trim();
+            String lastName = lastNameField.getText().trim();
+            String email = emailField.getText().trim();
+            String phone = phoneField.getText().trim();
+            
+            if (username.isEmpty() || password.isEmpty() || firstName.isEmpty() || 
+                lastName.isEmpty() || email.isEmpty() || phone.isEmpty()) {
+                messageLabel.setText("Please complete all required fields.");
+                return;
+            }
+            
+            if (!password.equals(confirmPassword)) {
+                messageLabel.setText("Password confirmation does not match.");
+                return;
+            }
+            
+            User newUser = new User(username, password, firstName, lastName, email, phone);
+            
             try {
-                String res = DatabaseConnection.signup(username, password, confirm, first, last, email, phone);
-                messageLabel.setText(res);
-                if (res.startsWith("Success")) {
+                if (authService.register(newUser)) {
+                    messageLabel.setText("Account created successfully.");
+                    // Clear fields
                     usernameField.clear();
                     passwordField.clear();
                     confirmPasswordField.clear();
@@ -135,10 +156,11 @@ public class Main extends Application {
                     lastNameField.clear();
                     emailField.clear();
                     phoneField.clear();
+                } else {
+                    messageLabel.setText("Username, email, or phone already exists.");
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                messageLabel.setText("Registration error. Please try again.");
+            } catch (SQLException exception) {
+                messageLabel.setText("Registration error: " + exception.getMessage());
             }
         });
 
@@ -173,6 +195,120 @@ public class Main extends Application {
         grid.add(messageLabel, 1, 10);
 
         return new Scene(grid, 500, 500);
+    }
+
+    private Scene createBlogInsertionScene(Stage stage, String username) {
+        VBox layout = new VBox(15);
+        layout.setPadding(new Insets(20));
+        layout.setAlignment(Pos.TOP_CENTER);
+        layout.setStyle("-fx-background-color: #D22B2B;");
+        
+        Label titleLabel = new Label("Insert New Blog");
+        titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white");
+        
+        // Blog form
+        GridPane form = new GridPane();
+        form.setVgap(10);
+        form.setHgap(10);
+        form.setAlignment(Pos.CENTER);
+        
+        TextField subjectField = new TextField();
+        subjectField.setPrefWidth(400);
+        
+        TextArea descriptionArea = new TextArea();
+        descriptionArea.setPrefRowCount(8);
+        descriptionArea.setPrefWidth(400);
+        
+        TextField tagsField = new TextField();
+        tagsField.setPrefWidth(400);
+        
+        Button submitButton = new Button("Submit Blog");
+        Label messageLabel = new Label();
+        messageLabel.setStyle("-fx-text-fill: white");
+        
+        // Blog count display
+        Label countLabel = new Label();
+        countLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+        
+        // Update count display
+        updateBlogCountDisplay(countLabel, username);
+        
+        submitButton.setOnAction(event -> {
+            String subject = subjectField.getText().trim();
+            String description = descriptionArea.getText().trim();
+            String tags = tagsField.getText().trim();
+            
+            if (subject.isEmpty() || description.isEmpty()) {
+                messageLabel.setText("Please fill in both subject and description.");
+                messageLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+                return;
+            }
+            
+            try {
+                BlogService blogService = new BlogService();
+                int blogId = blogService.createBlog(username, subject, description, tags);
+                
+                messageLabel.setText("Blog created successfully! Blog ID: " + blogId);
+                messageLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+                
+                // Clear form
+                subjectField.clear();
+                descriptionArea.clear();
+                tagsField.clear();
+                
+                // Update count display
+                updateBlogCountDisplay(countLabel, username);
+                
+            } catch (SQLException e) {
+                messageLabel.setText("Error: " + e.getMessage());
+                messageLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+            }
+        });
+        
+        // Back button
+        Button backButton = new Button("Back to Login");
+        backButton.setOnAction(event -> {
+            stage.setTitle("Login");
+            stage.setScene(createLoginScene(stage));
+        });
+        
+        // Add labels with white text
+        Label subjectLabel = new Label("Subject:");
+        subjectLabel.setStyle("-fx-text-fill: white");
+        Label descriptionLabel = new Label("Description:");
+        descriptionLabel.setStyle("-fx-text-fill: white");
+        Label tagsLabel = new Label("Tags:");
+        tagsLabel.setStyle("-fx-text-fill: white");
+        
+        // Add components to form
+        form.add(subjectLabel, 0, 0);
+        form.add(subjectField, 1, 0);
+        form.add(descriptionLabel, 0, 1);
+        form.add(descriptionArea, 1, 1);
+        form.add(tagsLabel, 0, 2);
+        form.add(tagsField, 1, 2);
+        form.add(submitButton, 1, 3);
+        form.add(messageLabel, 1, 4);
+        
+        layout.getChildren().addAll(
+            titleLabel,
+            countLabel,
+            form,
+            backButton
+        );
+        
+        return new Scene(layout, 600, 500);
+    }
+
+    private void updateBlogCountDisplay(Label countLabel, String username) {
+        try {
+            BlogService blogService = new BlogService();
+            int count = blogService.getTodayBlogCount(username);
+            int remaining = 2 - count;
+            countLabel.setText("Today's blogs: " + count + "/2 (Remaining: " + remaining + ")");
+        } catch (SQLException e) {
+            countLabel.setText("Error retrieving blog count");
+        }
     }
 
     private void showAlert(String title, String message) {
