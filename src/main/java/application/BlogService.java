@@ -1,7 +1,6 @@
 package application;
 
 import java.sql.*;
-import java.time.LocalDate;
 
 public class BlogService {
     

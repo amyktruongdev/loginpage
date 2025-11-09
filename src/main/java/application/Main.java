@@ -1,15 +1,19 @@
 package application;
 import javafx.application.Application;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.geometry.*;
 import javafx.stage.Stage;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 
 public class Main extends Application {
     
     private AuthService authService;
+    private String currentUser;
 
     @Override
     public void start(Stage primaryStage) {
@@ -22,7 +26,6 @@ public class Main extends Application {
         
         primaryStage.setTitle("Login Page");
         Scene loginScene = createLoginScene(primaryStage);
-        Scene createScene = createCreateAccountScene(primaryStage, loginScene);
 
         primaryStage.setScene(loginScene);
         primaryStage.setWidth(500);
@@ -63,8 +66,9 @@ public class Main extends Application {
             }
             
             try {
-                boolean ok = DatabaseConnection.login(username, password);
+                boolean ok = authService.login(username, password);
                 if (ok) {
+                    currentUser = username;
                     messageLabel.setText("Login Successful");
                     // Navigate to blog insertion interface
                     Scene blogScene = createBlogInsertionScene(stage, username);
@@ -107,6 +111,85 @@ public class Main extends Application {
         return new Scene(grid, 400, 250);
     }
 
+    private Scene createSearchScene(Stage stage) {
+    VBox root = new VBox(12);
+    root.setPadding(new Insets(16));
+    root.setStyle("-fx-background-color: #D22B2B;");
+
+    Label title = new Label("Search Blogs by Tag");
+    title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
+
+    HBox bar = new HBox(8);
+    TextField tagField = new TextField();
+    tagField.setPromptText("e.g., blockchain");
+    Button searchBtn = new Button("Search");
+    bar.getChildren().addAll(new Label("Tag:"), tagField, searchBtn);
+    bar.setAlignment(Pos.CENTER_LEFT);
+
+    Label msg = new Label();
+    msg.setStyle("-fx-text-fill: white;");
+
+    TableView<SearchService.Row> table = new TableView<>();
+
+    TableColumn<SearchService.Row, Number> cId = new TableColumn<>("ID");
+    cId.setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().blogid));
+
+    TableColumn<SearchService.Row, String> cUser = new TableColumn<>("User");
+    cUser.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().username));
+
+    TableColumn<SearchService.Row, String> cSubj = new TableColumn<>("Subject");
+    cSubj.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().subject));
+
+    TableColumn<SearchService.Row, String> cDesc = new TableColumn<>("Description");
+    cDesc.setCellValueFactory(d -> {
+        String s = d.getValue().description == null ? "" : d.getValue().description;
+        if (s.length() > 160) s = s.substring(0, 160) + "...";
+        return new SimpleStringProperty(s);
+    });
+
+    TableColumn<SearchService.Row, String> cTags = new TableColumn<>("Tags");
+    cTags.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().tags == null ? "" : d.getValue().tags));
+
+    TableColumn<SearchService.Row, String> cDate = new TableColumn<>("Posted");
+    cDate.setCellValueFactory(d -> {
+        Timestamp t = d.getValue().postDate;
+        String s = (t == null) ? "" : t.toLocalDateTime().toString().replace('T', ' ');
+        return new SimpleStringProperty(s);
+    });
+
+    table.getColumns().addAll(
+        java.util.List.of(cId, cUser, cSubj, cDesc, cTags, cDate)
+        );
+
+    Button back = new Button("Back");
+back.setOnAction(e -> {
+    stage.setScene(createBlogInsertionScene(stage, currentUser));
+    stage.setTitle("Insert Blog - " + currentUser);
+});
+
+    SearchService service = new SearchService();
+    searchBtn.setOnAction(e -> {
+        String tag = tagField.getText() == null ? "" : tagField.getText().trim();
+        if (tag.isEmpty()) {
+            msg.setText("Please enter a tag.");
+            table.getItems().clear();
+            return;
+        }
+        try {
+            var rows = service.searchByTag(tag);
+            table.getItems().setAll(rows);
+            msg.setText(rows.isEmpty() ? ("No blogs found for tag: " + tag) : ("Found " + rows.size() + " blog(s)."));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            msg.setText("Error: " + ex.getMessage());
+        }
+    });
+
+    root.getChildren().addAll(title, bar, msg, table, back);
+    return new Scene(root, 900, 540);
+}
+
+
     private Scene createCreateAccountScene(Stage stage, Scene loginScene) {
         Label titleLabel = new Label("Create New Account");
         titleLabel.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill:#D22B2B");
@@ -122,6 +205,7 @@ public class Main extends Application {
         Button createButton = new Button("Create Account");
         Button backButton = new Button("Back to Login");
         Label messageLabel = new Label();
+
 
         createButton.setOnAction(event -> {
             String username = usernameField.getText().trim();
@@ -271,6 +355,13 @@ public class Main extends Application {
             stage.setTitle("Login");
             stage.setScene(createLoginScene(stage));
         });
+
+        Button searchPageButton = new Button("Search Blogs by Tag");
+        searchPageButton.setOnAction(e -> {
+        Scene searchScene = createSearchScene(stage);  // method we'll add below
+        stage.setTitle("Search Blogs");
+        stage.setScene(searchScene);
+        });
         
         // Add labels with white text
         Label subjectLabel = new Label("Subject:");
@@ -294,6 +385,7 @@ public class Main extends Application {
             titleLabel,
             countLabel,
             form,
+            searchPageButton,
             backButton
         );
         
