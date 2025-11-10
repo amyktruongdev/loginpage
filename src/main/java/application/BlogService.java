@@ -3,6 +3,7 @@ package application;
 import java.sql.*;
 
 public class BlogService {
+	
     
     public boolean canUserPostBlog(String username) throws SQLException {
         String sql = "SELECT COUNT(*) as blog_count FROM blogs WHERE username = ? AND DATE(post_date) = CURDATE()";
@@ -80,6 +81,35 @@ public class BlogService {
         }
     }
     
+    public Blog getBlogById(int blogId) throws SQLException {
+    	String sql = """
+    		    SELECT b.username, b.subject, b.description,
+    		           GROUP_CONCAT(t.tag SEPARATOR ', ') AS tags,
+    		           b.post_date
+    		    FROM blogs b
+    		    LEFT JOIN blog_tags t ON b.blogid = t.blogid
+    		    WHERE b.blogid = ?
+    		    GROUP BY b.blogid, b.username, b.subject, b.description, b.post_date
+    		    """;
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, blogId);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                Blog b = new Blog();
+                b.blogid = blogId;
+                b.username = rs.getString("username");
+                b.subject = rs.getString("subject");
+                b.description = rs.getString("description");
+                b.tags = rs.getString("tags");
+                b.postDate = rs.getTimestamp("post_date");
+                return b;
+            }
+        }
+        return null;
+    }
+
     public int getTodayBlogCount(String username) throws SQLException {
         String sql = "SELECT COUNT(*) as blog_count FROM blogs WHERE username = ? AND DATE(post_date) = CURDATE()";
         

@@ -111,7 +111,7 @@ public class Main extends Application {
         return new Scene(grid, 400, 250);
     }
 
-    private Scene createSearchScene(Stage stage) {
+    private Scene createSearchScene(Stage stage,String currentUser) {
     VBox root = new VBox(12);
     root.setPadding(new Insets(16));
     root.setStyle("-fx-background-color: #D22B2B;");
@@ -158,8 +158,18 @@ public class Main extends Application {
     });
 
     table.getColumns().addAll(
-        java.util.List.of(cId, cUser, cSubj, cDesc, cTags, cDate)
-        );
+    	    java.util.List.of(cId, cUser, cSubj, cDesc, cTags, cDate)
+    	);
+    	table.setRowFactory(tv -> {
+    	    TableRow<SearchService.Row> row = new TableRow<>();
+    	    row.setOnMouseClicked(event -> {
+    	        if (event.getClickCount() == 2 && (!row.isEmpty())) {
+    	            SearchService.Row selectedBlog = row.getItem();
+    	            stage.setScene(createCommentScene(stage, selectedBlog.blogid, currentUser));
+    	        }
+    	    });
+    	    return row;
+    	});
 
     Button back = new Button("Back");
 back.setOnAction(e -> {
@@ -280,6 +290,151 @@ back.setOnAction(e -> {
 
         return new Scene(grid, 500, 500);
     }
+    private Scene createCommentScene(Stage stage, int blogId, String currentUser) {
+        CommentService commentService = new CommentService();
+        BlogService blogService = new BlogService();
+
+        VBox layout = new VBox(20);
+        layout.setStyle("-fx-background-color: linear-gradient(to bottom, #D32F2F, #B71C1C); -fx-padding: 30;");
+        layout.setAlignment(Pos.TOP_CENTER);
+
+        Label title = new Label("Leave a Comment");
+        title.setStyle("-fx-text-fill: white; -fx-font-size: 24px; -fx-font-weight: bold;");
+
+        // 🔹 Blog Info Card
+        VBox blogInfo = new VBox(8);
+        blogInfo.setAlignment(Pos.TOP_LEFT);
+        blogInfo.setPadding(new Insets(15));
+        blogInfo.setMaxWidth(700);
+        blogInfo.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 8, 0, 0, 2);");
+
+        try {
+            Blog blog = blogService.getBlogById(blogId);
+            if (blog != null) {
+                Label subject = new Label("Subject: " + blog.getSubject());
+                subject.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #D22B2B;");
+
+                Label author = new Label("By: " + blog.getUsername());
+                author.setStyle("-fx-font-size: 13px; -fx-text-fill: #444;");
+
+                Label desc = new Label(blog.getDescription());
+                desc.setWrapText(true);
+                desc.setStyle("-fx-font-size: 14px; -fx-text-fill: #222;");
+
+                Label tags = new Label("Tags: " + (blog.getTags() != null ? blog.getTags() : "None"));
+                tags.setStyle("-fx-font-size: 13px; -fx-text-fill: #666;");
+
+                Label date = new Label("Posted on: " + blog.getPostDate());
+                date.setStyle("-fx-font-size: 12px; -fx-text-fill: #888;");
+
+                blogInfo.getChildren().addAll(subject, author, desc, tags, date);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        // 🔹 Comments Table (directly under blog info)
+        Label commentsTitle = new Label("Existing Comments:");
+        commentsTitle.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;");
+        commentsTitle.setPadding(new Insets(10, 0, 0, 0));
+
+        TableView<Comment> commentTable = new TableView<>();
+        commentTable.setMaxWidth(700);
+        commentTable.setPrefHeight(200);
+        commentTable.setStyle("-fx-background-radius: 10;");
+
+        TableColumn<Comment, String> cUser = new TableColumn<>("User");
+        cUser.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getUsername()));
+
+        TableColumn<Comment, String> cSentiment = new TableColumn<>("Sentiment");
+        cSentiment.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getSentiment()));
+
+        TableColumn<Comment, String> cText = new TableColumn<>("Comment");
+        cText.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getCommentText()));
+
+        TableColumn<Comment, String> cDate = new TableColumn<>("Date");
+        cDate.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getCommentDate().toString()));
+
+        commentTable.getColumns().addAll(cUser, cSentiment, cText, cDate);
+
+        try {
+            var comments = commentService.getCommentsByBlogId(blogId);
+            commentTable.getItems().setAll(comments);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        VBox commentBox = new VBox(10);
+        commentBox.setAlignment(Pos.CENTER_LEFT);
+        commentBox.setMaxWidth(700);
+        commentBox.setPadding(new Insets(15));
+        commentBox.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 8, 0, 0, 2);");
+
+        Label sentimentLabel = new Label("Sentiment:");
+        sentimentLabel.setStyle("-fx-text-fill: #D22B2B; -fx-font-weight: bold;");
+
+        ComboBox<String> sentimentBox = new ComboBox<>();
+        sentimentBox.getItems().addAll("Positive", "Negative");
+        sentimentBox.setValue("Positive");
+        sentimentBox.setStyle("-fx-pref-width: 200;");
+
+        Label commentLabel = new Label("Comment:");
+        commentLabel.setStyle("-fx-text-fill: #D22B2B; -fx-font-weight: bold;");
+
+        TextArea commentArea = new TextArea();
+        commentArea.setPromptText("Write your comment here...");
+        commentArea.setWrapText(true);
+        commentArea.setPrefWidth(650);
+        commentArea.setPrefHeight(100);
+
+        Label messageLabel = new Label();
+        messageLabel.setStyle("-fx-text-fill: #D22B2B; -fx-font-size: 13px; -fx-font-weight: bold;");
+
+        Button submitBtn = new Button("Submit Comment");
+        submitBtn.setStyle("""
+            -fx-background-color: #D22B2B;
+            -fx-text-fill: white;
+            -fx-font-weight: bold;
+            -fx-background-radius: 6;
+            -fx-pref-width: 200;
+            -fx-cursor: hand;
+            """);
+
+        submitBtn.setOnAction(e -> {
+            String sentiment = sentimentBox.getValue();
+            String text = commentArea.getText().trim();
+
+            if (text.isEmpty()) {
+                messageLabel.setText("Please enter a comment.");
+                return;
+            }
+
+            try {
+                boolean success = commentService.addComment(currentUser, blogId, sentiment, text);
+                if (success) {
+                    messageLabel.setText("✅ Comment added successfully!");
+                    commentArea.clear();
+                    var comments = commentService.getCommentsByBlogId(blogId);
+                    commentTable.getItems().setAll(comments);
+                }
+            } catch (SQLException ex) {
+                messageLabel.setText("❌ " + ex.getMessage());
+            }
+        });
+
+        HBox formRow = new HBox(20, sentimentLabel, sentimentBox);
+        formRow.setAlignment(Pos.CENTER_LEFT);
+
+        commentBox.getChildren().addAll(formRow, commentLabel, commentArea, submitBtn, messageLabel);
+
+        Button backBtn = new Button("Back");
+        backBtn.setStyle("-fx-background-color: white; -fx-text-fill: #D22B2B; -fx-font-weight: bold; -fx-background-radius: 6;");
+        backBtn.setOnAction(e -> stage.setScene(createSearchScene(stage, currentUser)));
+
+        layout.getChildren().addAll(title, blogInfo, commentsTitle, commentTable, commentBox, backBtn);
+
+        return new Scene(layout, 850, 750);
+    }
 
     private Scene createBlogInsertionScene(Stage stage, String username) {
         VBox layout = new VBox(15);
@@ -358,9 +513,9 @@ back.setOnAction(e -> {
 
         Button searchPageButton = new Button("Search Blogs by Tag");
         searchPageButton.setOnAction(e -> {
-        Scene searchScene = createSearchScene(stage);  // method we'll add below
-        stage.setTitle("Search Blogs");
-        stage.setScene(searchScene);
+            Scene searchScene = createSearchScene(stage, username);
+            stage.setTitle("Search Blogs");
+            stage.setScene(searchScene);
         });
         
         // Add labels with white text

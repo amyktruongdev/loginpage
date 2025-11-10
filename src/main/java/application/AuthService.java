@@ -17,7 +17,6 @@ public boolean login(String username, String enteredPassword) throws SQLExceptio
             if (stored != null && !stored.startsWith("$argon2")) {
                 boolean ok = stored.equals(enteredPassword);
                 if (ok) {
-                    // 🔁 upgrade in place to Argon2
                     String newHash = Passwords.hash(enteredPassword);
                     try (var up = conn.prepareStatement("UPDATE user SET password=? WHERE username=?")) {
                         up.setString(1, newHash);
