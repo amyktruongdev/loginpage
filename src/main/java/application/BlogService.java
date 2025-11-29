@@ -1,6 +1,7 @@
 package application;
 
 import java.sql.*;
+import java.util.*;
 
 public class BlogService {
 	
@@ -124,5 +125,64 @@ public class BlogService {
             System.out.println("DEBUG: User " + username + " has " + count + " blogs today");
             return count;
         }
+    }
+    
+    public List<String> getUsersWithTwoTagsSameDay(String tagX, String tagY) throws SQLException {
+        List<String> users = new ArrayList<>();
+        String sql = """
+            SELECT DISTINCT b1.username
+            FROM blogs b1
+            JOIN blog_tags t1 ON b1.blogid = t1.blogid
+            JOIN blogs b2 ON b1.username = b2.username
+            JOIN blog_tags t2 ON b2.blogid = t2.blogid
+            WHERE DATE(b1.post_date) = DATE(b2.post_date)
+              AND t1.tag LIKE ?
+              AND t2.tag LIKE ?
+              AND b1.blogid <> b2.blogid
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, "%" + tagX + "%");
+            stmt.setString(2, "%" + tagY + "%");
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                users.add(rs.getString("username"));
+            }
+        }
+        return users;
+    }
+
+    public List<String> getTopBloggersOnDate(String dateStr) throws SQLException {
+        List<String> topUsers = new ArrayList<>();
+
+        String sql = """
+            SELECT username
+            FROM blogs
+            WHERE DATE(post_date) = ?
+            GROUP BY username
+            HAVING COUNT(*) = (
+                SELECT MAX(blog_count)
+                FROM (
+                    SELECT COUNT(*) AS blog_count
+                    FROM blogs
+                    WHERE DATE(post_date) = ?
+                    GROUP BY username
+                ) AS subquery
+            )
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, dateStr);
+            stmt.setString(2, dateStr);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                topUsers.add(rs.getString("username"));
+            }
+        }
+
+        return topUsers;
     }
 }

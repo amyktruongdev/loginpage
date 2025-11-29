@@ -111,94 +111,164 @@ public class Main extends Application {
         return new Scene(grid, 400, 250);
     }
 
-    private Scene createSearchScene(Stage stage,String currentUser) {
-    VBox root = new VBox(12);
-    root.setPadding(new Insets(16));
-    root.setStyle("-fx-background-color: #D22B2B;");
+    private Scene createSearchScene(Stage stage, String currentUser) {
+        VBox root = new VBox(12);
+        root.setPadding(new Insets(16));
+        root.setStyle("-fx-background-color: #D22B2B;");
 
-    Label title = new Label("Search Blogs by Tag");
-    title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
+        Label title = new Label("Search Blogs by Tag");
+        title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
 
-    HBox bar = new HBox(8);
-    TextField tagField = new TextField();
-    tagField.setPromptText("e.g., blockchain");
-    Button searchBtn = new Button("Search");
-    bar.getChildren().addAll(new Label("Tag:"), tagField, searchBtn);
-    bar.setAlignment(Pos.CENTER_LEFT);
+        // --- Single Tag Search (existing) ---
+        HBox bar = new HBox(8);
+        TextField tagField = new TextField();
+        tagField.setPromptText("e.g., blockchain");
+        Button searchBtn = new Button("Search");
+        bar.getChildren().addAll(new Label("Tag:"), tagField, searchBtn);
+        bar.setAlignment(Pos.CENTER_LEFT);
 
-    Label msg = new Label();
-    msg.setStyle("-fx-text-fill: white;");
+        // --- New Tag Pair Search Section ---
+        HBox tagPairBox = new HBox(8);
+        TextField tag1Field = new TextField();
+        TextField tag2Field = new TextField();
+        tag1Field.setPromptText("Tag X");
+        tag2Field.setPromptText("Tag Y");
+        Button tagSearchBtn = new Button("Find Users with Both Tags");
+        tagPairBox.getChildren().addAll(new Label("Tag X:"), tag1Field, new Label("Tag Y:"), tag2Field, tagSearchBtn);
+        tagPairBox.setAlignment(Pos.CENTER_LEFT);
 
-    TableView<SearchService.Row> table = new TableView<>();
+        // --- Top Bloggers Section ---
+        Button topBloggersBtn = new Button("Show Top Bloggers (10/10/2025)");
+        topBloggersBtn.setAlignment(Pos.CENTER_LEFT);
 
-    TableColumn<SearchService.Row, Number> cId = new TableColumn<>("ID");
-    cId.setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().blogid));
+        // --- Message Label ---
+        Label msg = new Label();
+        msg.setStyle("-fx-text-fill: white;");
 
-    TableColumn<SearchService.Row, String> cUser = new TableColumn<>("User");
-    cUser.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().username));
+        // --- Table for results ---
+        TableView<SearchService.Row> table = new TableView<>();
 
-    TableColumn<SearchService.Row, String> cSubj = new TableColumn<>("Subject");
-    cSubj.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().subject));
+        TableColumn<SearchService.Row, Number> cId = new TableColumn<>("ID");
+        cId.setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().blogid));
 
-    TableColumn<SearchService.Row, String> cDesc = new TableColumn<>("Description");
-    cDesc.setCellValueFactory(d -> {
-        String s = d.getValue().description == null ? "" : d.getValue().description;
-        if (s.length() > 160) s = s.substring(0, 160) + "...";
-        return new SimpleStringProperty(s);
-    });
+        TableColumn<SearchService.Row, String> cUser = new TableColumn<>("User");
+        cUser.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().username));
 
-    TableColumn<SearchService.Row, String> cTags = new TableColumn<>("Tags");
-    cTags.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().tags == null ? "" : d.getValue().tags));
+        TableColumn<SearchService.Row, String> cSubj = new TableColumn<>("Subject");
+        cSubj.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().subject));
 
-    TableColumn<SearchService.Row, String> cDate = new TableColumn<>("Posted");
-    cDate.setCellValueFactory(d -> {
-        Timestamp t = d.getValue().postDate;
-        String s = (t == null) ? "" : t.toLocalDateTime().toString().replace('T', ' ');
-        return new SimpleStringProperty(s);
-    });
+        TableColumn<SearchService.Row, String> cDesc = new TableColumn<>("Description");
+        cDesc.setCellValueFactory(d -> {
+            String s = d.getValue().description == null ? "" : d.getValue().description;
+            if (s.length() > 160) s = s.substring(0, 160) + "...";
+            return new SimpleStringProperty(s);
+        });
 
-    table.getColumns().addAll(
-    	    java.util.List.of(cId, cUser, cSubj, cDesc, cTags, cDate)
-    	);
-    	table.setRowFactory(tv -> {
-    	    TableRow<SearchService.Row> row = new TableRow<>();
-    	    row.setOnMouseClicked(event -> {
-    	        if (event.getClickCount() == 2 && (!row.isEmpty())) {
-    	            SearchService.Row selectedBlog = row.getItem();
-    	            stage.setScene(createCommentScene(stage, selectedBlog.blogid, currentUser));
-    	        }
-    	    });
-    	    return row;
-    	});
+        TableColumn<SearchService.Row, String> cTags = new TableColumn<>("Tags");
+        cTags.setCellValueFactory(d -> new SimpleStringProperty(
+                d.getValue().tags == null ? "" : d.getValue().tags));
 
-    Button back = new Button("Back");
-back.setOnAction(e -> {
-    stage.setScene(createBlogInsertionScene(stage, currentUser));
-    stage.setTitle("Insert Blog - " + currentUser);
-});
+        TableColumn<SearchService.Row, String> cDate = new TableColumn<>("Posted");
+        cDate.setCellValueFactory(d -> {
+            Timestamp t = d.getValue().postDate;
+            String s = (t == null) ? "" : t.toLocalDateTime().toString().replace('T', ' ');
+            return new SimpleStringProperty(s);
+        });
 
-    SearchService service = new SearchService();
-    searchBtn.setOnAction(e -> {
-        String tag = tagField.getText() == null ? "" : tagField.getText().trim();
-        if (tag.isEmpty()) {
-            msg.setText("Please enter a tag.");
-            table.getItems().clear();
-            return;
-        }
-        try {
-            var rows = service.searchByTag(tag);
-            table.getItems().setAll(rows);
-            msg.setText(rows.isEmpty() ? ("No blogs found for tag: " + tag) : ("Found " + rows.size() + " blog(s)."));
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            msg.setText("Error: " + ex.getMessage());
-        }
-    });
+        table.getColumns().addAll(cId, cUser, cSubj, cDesc, cTags, cDate);
 
-    root.getChildren().addAll(title, bar, msg, table, back);
-    return new Scene(root, 900, 540);
-}
+        // --- Click on a row to open Comment Scene ---
+        table.setRowFactory(tv -> {
+            TableRow<SearchService.Row> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && (!row.isEmpty())) {
+                    SearchService.Row selectedBlog = row.getItem();
+                    stage.setScene(createCommentScene(stage, selectedBlog.blogid, currentUser));
+                }
+            });
+            return row;
+        });
 
+        // --- Back button ---
+        Button back = new Button("Back");
+        back.setOnAction(e -> {
+            stage.setScene(createBlogInsertionScene(stage, currentUser));
+            stage.setTitle("Insert Blog - " + currentUser);
+        });
+
+        // --- Search Logic (Existing) ---
+        SearchService service = new SearchService();
+        searchBtn.setOnAction(e -> {
+            String tag = tagField.getText() == null ? "" : tagField.getText().trim();
+            if (tag.isEmpty()) {
+                msg.setText("Please enter a tag.");
+                table.getItems().clear();
+                return;
+            }
+            try {
+                var rows = service.searchByTag(tag);
+                table.getItems().setAll(rows);
+                msg.setText(rows.isEmpty() ? ("No blogs found for tag: " + tag) : ("Found " + rows.size() + " blog(s)."));
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                msg.setText("Error: " + ex.getMessage());
+            }
+        });
+
+        // --- Logic for the Two-Tag Search ---
+        tagSearchBtn.setOnAction(e -> {
+            String tagX = tag1Field.getText().trim();
+            String tagY = tag2Field.getText().trim();
+
+            if (tagX.isEmpty() || tagY.isEmpty()) {
+                msg.setText("Please enter both tags.");
+                return;
+            }
+
+            try {
+                BlogService bs = new BlogService();
+                java.util.List<String> users = bs.getUsersWithTwoTagsSameDay(tagX, tagY);
+                if (users.isEmpty()) {
+                    msg.setText("No users found with both tags on the same day.");
+                } else {
+                    msg.setText("Users: " + String.join(", ", users));
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                msg.setText("Error: " + ex.getMessage());
+            }
+        });
+
+        // --- Logic for Top Bloggers by Date ---
+        topBloggersBtn.setOnAction(e -> {
+            try {
+                BlogService bs = new BlogService();
+                String today = java.time.LocalDate.now().toString();
+                java.util.List<String> topUsers = bs.getTopBloggersOnDate(today);
+                if (topUsers.isEmpty()) {
+                    msg.setText("No blogs found for 10/10/2025.");
+                } else {
+                    msg.setText("Top blogger(s) on 10/10/2025: " + String.join(", ", topUsers));
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                msg.setText("Error: " + ex.getMessage());
+            }
+        });
+
+        // --- Add all UI elements to layout ---
+        root.getChildren().addAll(
+            title,
+            bar,
+            tagPairBox,
+            topBloggersBtn,
+            msg,
+            table,
+            back
+        );
+
+        return new Scene(root, 900, 540);
+    }
 
     private Scene createCreateAccountScene(Stage stage, Scene loginScene) {
         Label titleLabel = new Label("Create New Account");
