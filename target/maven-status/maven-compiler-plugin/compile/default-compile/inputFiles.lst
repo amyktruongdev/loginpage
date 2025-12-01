@@ -1,29 +1,11 @@
-<<<<<<< HEAD
 C:\Users\ATTAC\OneDrive\Documents\GitHub\loginpage\src\main\java\application\AuthService.java
-<<<<<<< Updated upstream
-C:\Users\ATTAC\OneDrive\Documents\GitHub\loginpage\src\main\java\application\BlogService.java
-=======
 C:\Users\ATTAC\OneDrive\Documents\GitHub\loginpage\src\main\java\application\Blog.java
 C:\Users\ATTAC\OneDrive\Documents\GitHub\loginpage\src\main\java\application\BlogService.java
 C:\Users\ATTAC\OneDrive\Documents\GitHub\loginpage\src\main\java\application\Comment.java
 C:\Users\ATTAC\OneDrive\Documents\GitHub\loginpage\src\main\java\application\CommentService.java
->>>>>>> Stashed changes
 C:\Users\ATTAC\OneDrive\Documents\GitHub\loginpage\src\main\java\application\DatabaseConnection.java
 C:\Users\ATTAC\OneDrive\Documents\GitHub\loginpage\src\main\java\application\Main.java
 C:\Users\ATTAC\OneDrive\Documents\GitHub\loginpage\src\main\java\application\Passwords.java
 C:\Users\ATTAC\OneDrive\Documents\GitHub\loginpage\src\main\java\application\SearchService.java
 C:\Users\ATTAC\OneDrive\Documents\GitHub\loginpage\src\main\java\application\TestDB.java
 C:\Users\ATTAC\OneDrive\Documents\GitHub\loginpage\src\main\java\application\User.java
-=======
-/Users/amytruong/eclipse-workspace/loginpage/src/main/java/application/AuthService.java
-/Users/amytruong/eclipse-workspace/loginpage/src/main/java/application/Blog.java
-/Users/amytruong/eclipse-workspace/loginpage/src/main/java/application/BlogService.java
-/Users/amytruong/eclipse-workspace/loginpage/src/main/java/application/Comment.java
-/Users/amytruong/eclipse-workspace/loginpage/src/main/java/application/CommentService.java
-/Users/amytruong/eclipse-workspace/loginpage/src/main/java/application/DatabaseConnection.java
-/Users/amytruong/eclipse-workspace/loginpage/src/main/java/application/Main.java
-/Users/amytruong/eclipse-workspace/loginpage/src/main/java/application/Passwords.java
-/Users/amytruong/eclipse-workspace/loginpage/src/main/java/application/SearchService.java
-/Users/amytruong/eclipse-workspace/loginpage/src/main/java/application/TestDB.java
-/Users/amytruong/eclipse-workspace/loginpage/src/main/java/application/User.java
->>>>>>> faaad24bc8c157e65c2480a7568b41d638540cbc

@@ -128,54 +128,8 @@ public class Main extends Application {
         return new Scene(grid, 400, 250);
     }
 
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-    private Scene createSearchScene(Stage stage) {
-    VBox root = new VBox(12);
-    root.setPadding(new Insets(16));
-    root.setStyle("-fx-background-color: #D22B2B;");
-=======
-    private Scene createSearchScene(Stage stage, String currentUser) {
-        VBox root = new VBox(12);
-        root.setPadding(new Insets(16));
-        root.setStyle("-fx-background-color: #D22B2B;");
->>>>>>> faaad24bc8c157e65c2480a7568b41d638540cbc
-
-        Label title = new Label("Search Blogs by Tag");
-        title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
-
-        // --- Single Tag Search (existing) ---
-        HBox bar = new HBox(8);
-        TextField tagField = new TextField();
-        tagField.setPromptText("e.g., blockchain");
-        Button searchBtn = new Button("Search");
-        bar.getChildren().addAll(new Label("Tag:"), tagField, searchBtn);
-        bar.setAlignment(Pos.CENTER_LEFT);
-
-        // --- New Tag Pair Search Section ---
-        HBox tagPairBox = new HBox(8);
-        TextField tag1Field = new TextField();
-        TextField tag2Field = new TextField();
-        tag1Field.setPromptText("Tag X");
-        tag2Field.setPromptText("Tag Y");
-        Button tagSearchBtn = new Button("Find Users with Both Tags");
-        tagPairBox.getChildren().addAll(new Label("Tag X:"), tag1Field, new Label("Tag Y:"), tag2Field, tagSearchBtn);
-        tagPairBox.setAlignment(Pos.CENTER_LEFT);
-
-        // --- Top Bloggers Section ---
-        Button topBloggersBtn = new Button("Show Top Bloggers (10/10/2025)");
-        topBloggersBtn.setAlignment(Pos.CENTER_LEFT);
-
-        // --- Message Label ---
-        Label msg = new Label();
-        msg.setStyle("-fx-text-fill: white;");
-
-<<<<<<< HEAD
-    TableColumn<SearchService.Row, String> cUser = new TableColumn<>("User");
-    cUser.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().username));
-=======
     // --------------------------------------------------------------------
-    // SEARCH + ADVANCED QUERIES SCREEN
+    // SEARCH + ADVANCED QUERIES SCREEN (items 1–7)
     // --------------------------------------------------------------------
     private Scene createSearchScene(Stage stage, String currentUser) {
         VBox root = new VBox(12);
@@ -185,7 +139,7 @@ public class Main extends Application {
         Label title = new Label("Search & Advanced Queries");
         title.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;");
 
-        // --- Single Tag Search ---
+        // --- Single Tag Search (blogs table) ---
         HBox bar = new HBox(8);
         Label tagLbl = new Label("Tag:");
         tagLbl.setStyle("-fx-text-fill: white;");
@@ -250,9 +204,9 @@ public class Main extends Application {
         msg.setStyle("-fx-text-fill: white;");
 
         // ----------------------------------------------------------------
-        // Generic list TableView<String> for user/blog lists
+        // Generic list TableView<String> for user/blog lists (queries 1–7)
         // ----------------------------------------------------------------
-        Label listTitle = new Label("Results:");
+        Label listTitle = new Label("Query Results:");
         listTitle.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
 
         TableView<String> listTable = new TableView<>();
@@ -271,11 +225,6 @@ public class Main extends Application {
 
         TableView<SearchService.Row> blogTable = new TableView<>();
         blogTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
->>>>>>> Stashed changes
-=======
-        // --- Table for results ---
-        TableView<SearchService.Row> table = new TableView<>();
->>>>>>> faaad24bc8c157e65c2480a7568b41d638540cbc
 
         TableColumn<SearchService.Row, Number> cId = new TableColumn<>("ID");
         cId.setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().blogid));
@@ -293,151 +242,9 @@ public class Main extends Application {
             return new SimpleStringProperty(s);
         });
 
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-    table.getColumns().addAll(
-        java.util.List.of(cId, cUser, cSubj, cDesc, cTags, cDate)
-        );
-
-    Button back = new Button("Back");
-back.setOnAction(e -> {
-    stage.setScene(createBlogInsertionScene(stage, currentUser));
-    stage.setTitle("Insert Blog - " + currentUser);
-});
-
-    SearchService service = new SearchService();
-    searchBtn.setOnAction(e -> {
-        String tag = tagField.getText() == null ? "" : tagField.getText().trim();
-        if (tag.isEmpty()) {
-            msg.setText("Please enter a tag.");
-            table.getItems().clear();
-            return;
-        }
-        try {
-            var rows = service.searchByTag(tag);
-            table.getItems().setAll(rows);
-            msg.setText(rows.isEmpty() ? ("No blogs found for tag: " + tag) : ("Found " + rows.size() + " blog(s)."));
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            msg.setText("Error: " + ex.getMessage());
-        }
-    });
-
-    root.getChildren().addAll(title, bar, msg, table, back);
-    return new Scene(root, 900, 540);
-}
-
-=======
         TableColumn<SearchService.Row, String> cTags = new TableColumn<>("Tags");
         cTags.setCellValueFactory(d ->
                 new SimpleStringProperty(d.getValue().tags == null ? "" : d.getValue().tags));
-=======
-        TableColumn<SearchService.Row, String> cTags = new TableColumn<>("Tags");
-        cTags.setCellValueFactory(d -> new SimpleStringProperty(
-                d.getValue().tags == null ? "" : d.getValue().tags));
-
-        TableColumn<SearchService.Row, String> cDate = new TableColumn<>("Posted");
-        cDate.setCellValueFactory(d -> {
-            Timestamp t = d.getValue().postDate;
-            String s = (t == null) ? "" : t.toLocalDateTime().toString().replace('T', ' ');
-            return new SimpleStringProperty(s);
-        });
-
-        table.getColumns().addAll(cId, cUser, cSubj, cDesc, cTags, cDate);
-
-        // --- Click on a row to open Comment Scene ---
-        table.setRowFactory(tv -> {
-            TableRow<SearchService.Row> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && (!row.isEmpty())) {
-                    SearchService.Row selectedBlog = row.getItem();
-                    stage.setScene(createCommentScene(stage, selectedBlog.blogid, currentUser));
-                }
-            });
-            return row;
-        });
-
-        // --- Back button ---
-        Button back = new Button("Back");
-        back.setOnAction(e -> {
-            stage.setScene(createBlogInsertionScene(stage, currentUser));
-            stage.setTitle("Insert Blog - " + currentUser);
-        });
-
-        // --- Search Logic (Existing) ---
-        SearchService service = new SearchService();
-        searchBtn.setOnAction(e -> {
-            String tag = tagField.getText() == null ? "" : tagField.getText().trim();
-            if (tag.isEmpty()) {
-                msg.setText("Please enter a tag.");
-                table.getItems().clear();
-                return;
-            }
-            try {
-                var rows = service.searchByTag(tag);
-                table.getItems().setAll(rows);
-                msg.setText(rows.isEmpty() ? ("No blogs found for tag: " + tag) : ("Found " + rows.size() + " blog(s)."));
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                msg.setText("Error: " + ex.getMessage());
-            }
-        });
-
-        // --- Logic for the Two-Tag Search ---
-        tagSearchBtn.setOnAction(e -> {
-            String tagX = tag1Field.getText().trim();
-            String tagY = tag2Field.getText().trim();
-
-            if (tagX.isEmpty() || tagY.isEmpty()) {
-                msg.setText("Please enter both tags.");
-                return;
-            }
-
-            try {
-                BlogService bs = new BlogService();
-                java.util.List<String> users = bs.getUsersWithTwoTagsSameDay(tagX, tagY);
-                if (users.isEmpty()) {
-                    msg.setText("No users found with both tags on the same day.");
-                } else {
-                    msg.setText("Users: " + String.join(", ", users));
-                }
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-                msg.setText("Error: " + ex.getMessage());
-            }
-        });
-
-        // --- Logic for Top Bloggers by Date ---
-        topBloggersBtn.setOnAction(e -> {
-            try {
-                BlogService bs = new BlogService();
-                String today = java.time.LocalDate.now().toString();
-                java.util.List<String> topUsers = bs.getTopBloggersOnDate(today);
-                if (topUsers.isEmpty()) {
-                    msg.setText("No blogs found for 10/10/2025.");
-                } else {
-                    msg.setText("Top blogger(s) on 10/10/2025: " + String.join(", ", topUsers));
-                }
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-                msg.setText("Error: " + ex.getMessage());
-            }
-        });
-
-        // --- Add all UI elements to layout ---
-        root.getChildren().addAll(
-            title,
-            bar,
-            tagPairBox,
-            topBloggersBtn,
-            msg,
-            table,
-            back
-        );
-
-        return new Scene(root, 900, 540);
-    }
->>>>>>> faaad24bc8c157e65c2480a7568b41d638540cbc
 
         TableColumn<SearchService.Row, String> cDate = new TableColumn<>("Posted");
         cDate.setCellValueFactory(d -> {
@@ -447,6 +254,18 @@ back.setOnAction(e -> {
         });
 
         blogTable.getColumns().addAll(cId, cUser, cSubj, cDesc, cTags, cDate);
+
+        // double-click a blog row to open comment scene
+        blogTable.setRowFactory(tv -> {
+            TableRow<SearchService.Row> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && (!row.isEmpty())) {
+                    SearchService.Row selectedBlog = row.getItem();
+                    stage.setScene(createCommentScene(stage, selectedBlog.blogid, currentUser));
+                }
+            });
+            return row;
+        });
 
         // back button
         Button back = new Button("Back");
@@ -484,6 +303,7 @@ back.setOnAction(e -> {
 
             if (tagX.isEmpty() || tagY.isEmpty()) {
                 msg.setText("Please enter both tags.");
+                listTable.getItems().clear();
                 return;
             }
 
@@ -495,7 +315,7 @@ back.setOnAction(e -> {
                     msg.setText("No users found with both tags on the same day.");
                 } else {
                     msg.setText("Users with both '" + tagX + "' and '" + tagY +
-                            "' on the same day: " + String.join(", ", users));
+                            "' on the same day are listed below.");
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -528,6 +348,7 @@ back.setOnAction(e -> {
 
             if (userX.isEmpty() || userY.isEmpty()) {
                 msg.setText("Please enter both User X and User Y.");
+                listTable.getItems().clear();
                 return;
             }
 
@@ -538,8 +359,8 @@ back.setOnAction(e -> {
                 if (users.isEmpty()) {
                     msg.setText("No users are followed by both " + userX + " and " + userY + ".");
                 } else {
-                    msg.setText("Users followed by both " + userX + " and " + userY + ": " +
-                            String.join(", ", users));
+                    msg.setText("Users followed by both " + userX + " and " + userY +
+                            " are listed below.");
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -556,7 +377,7 @@ back.setOnAction(e -> {
                 if (users.isEmpty()) {
                     msg.setText("All users have posted at least one blog.");
                 } else {
-                    msg.setText("Users who never posted a blog: " + String.join(", ", users));
+                    msg.setText("Users who never posted a blog are listed below.");
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -580,7 +401,8 @@ back.setOnAction(e -> {
                 if (blogs.isEmpty()) {
                     msg.setText("No blogs of " + userX + " have only positive comments.");
                 } else {
-                    msg.setText("Blogs of " + userX + " with all positive comments are listed below.");
+                    msg.setText("Blogs of " + userX +
+                            " with all positive comments are listed below.");
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -597,7 +419,7 @@ back.setOnAction(e -> {
                 if (users.isEmpty()) {
                     msg.setText("No users found who have only posted negative comments.");
                 } else {
-                    msg.setText("Users with only negative comments: " + String.join(", ", users));
+                    msg.setText("Users with only negative comments are listed below.");
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -614,8 +436,8 @@ back.setOnAction(e -> {
                 if (users.isEmpty()) {
                     msg.setText("No users match the criteria (blogs without negative comments).");
                 } else {
-                    msg.setText("Users whose blogs have never received negative comments: " +
-                            String.join(", ", users));
+                    msg.setText("Users whose blogs have never received negative comments " +
+                            "are listed below.");
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -648,7 +470,6 @@ back.setOnAction(e -> {
 
         return new Scene(root, 900, 600);
     }
->>>>>>> Stashed changes
 
     // --------------------------------------------------------------------
     // CREATE ACCOUNT SCREEN
@@ -746,6 +567,10 @@ back.setOnAction(e -> {
 
         return new Scene(grid, 500, 500);
     }
+
+    // --------------------------------------------------------------------
+    // COMMENT SCREEN
+    // --------------------------------------------------------------------
     private Scene createCommentScene(Stage stage, int blogId, String currentUser) {
         CommentService commentService = new CommentService();
         BlogService blogService = new BlogService();
@@ -757,12 +582,13 @@ back.setOnAction(e -> {
         Label title = new Label("Leave a Comment");
         title.setStyle("-fx-text-fill: white; -fx-font-size: 24px; -fx-font-weight: bold;");
 
-        // 🔹 Blog Info Card
+        // Blog Info Card
         VBox blogInfo = new VBox(8);
         blogInfo.setAlignment(Pos.TOP_LEFT);
         blogInfo.setPadding(new Insets(15));
         blogInfo.setMaxWidth(700);
-        blogInfo.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 8, 0, 0, 2);");
+        blogInfo.setStyle("-fx-background-color: white; -fx-background-radius: 10; "
+                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 8, 0, 0, 2);");
 
         try {
             Blog blog = blogService.getBlogById(blogId);
@@ -789,7 +615,7 @@ back.setOnAction(e -> {
             e.printStackTrace();
         }
 
-        // 🔹 Comments Table (directly under blog info)
+        // Comments Table
         Label commentsTitle = new Label("Existing Comments:");
         commentsTitle.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;");
         commentsTitle.setPadding(new Insets(10, 0, 0, 0));
@@ -820,11 +646,13 @@ back.setOnAction(e -> {
             e.printStackTrace();
         }
 
+        // Comment form
         VBox commentBox = new VBox(10);
         commentBox.setAlignment(Pos.CENTER_LEFT);
         commentBox.setMaxWidth(700);
         commentBox.setPadding(new Insets(15));
-        commentBox.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 8, 0, 0, 2);");
+        commentBox.setStyle("-fx-background-color: white; -fx-background-radius: 10; "
+                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 8, 0, 0, 2);");
 
         Label sentimentLabel = new Label("Sentiment:");
         sentimentLabel.setStyle("-fx-text-fill: #D22B2B; -fx-font-weight: bold;");
@@ -884,7 +712,8 @@ back.setOnAction(e -> {
         commentBox.getChildren().addAll(formRow, commentLabel, commentArea, submitBtn, messageLabel);
 
         Button backBtn = new Button("Back");
-        backBtn.setStyle("-fx-background-color: white; -fx-text-fill: #D22B2B; -fx-font-weight: bold; -fx-background-radius: 6;");
+        backBtn.setStyle("-fx-background-color: white; -fx-text-fill: #D22B2B; "
+                + "-fx-font-weight: bold; -fx-background-radius: 6;");
         backBtn.setOnAction(e -> stage.setScene(createSearchScene(stage, currentUser)));
 
         layout.getChildren().addAll(title, blogInfo, commentsTitle, commentTable, commentBox, backBtn);
@@ -969,21 +798,9 @@ back.setOnAction(e -> {
         // open search + queries page
         Button searchPageButton = new Button("Search & Advanced Queries");
         searchPageButton.setOnAction(e -> {
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-        Scene searchScene = createSearchScene(stage);  // method we'll add below
-        stage.setTitle("Search Blogs");
-        stage.setScene(searchScene);
-=======
             Scene searchScene = createSearchScene(stage, username);
             stage.setTitle("Search & Advanced Queries");
             stage.setScene(searchScene);
->>>>>>> Stashed changes
-=======
-            Scene searchScene = createSearchScene(stage, username);
-            stage.setTitle("Search Blogs");
-            stage.setScene(searchScene);
->>>>>>> faaad24bc8c157e65c2480a7568b41d638540cbc
         });
 
         HBox queryButtons = new HBox(10, searchPageButton);

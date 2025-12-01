@@ -1,20 +1,18 @@
 package application;
 
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BlogService {
-<<<<<<< Updated upstream
-    
-=======
 
-    // ------------------------------------------------------------
-    // Existing methods (Phase 2 + early Phase 3)
-    // ------------------------------------------------------------
+    // --------------------------------------------------------------------
+    // BASIC BLOG OPERATIONS
+    // --------------------------------------------------------------------
 
->>>>>>> Stashed changes
+    // Check if user can post (limit 2 blogs per day)
     public boolean canUserPostBlog(String username) throws SQLException {
-        String sql = "SELECT COUNT(*) as blog_count " +
+        String sql = "SELECT COUNT(*) AS blog_count " +
                      "FROM blogs " +
                      "WHERE username = ? AND DATE(post_date) = CURDATE()";
 
@@ -33,7 +31,10 @@ public class BlogService {
         return false;
     }
 
-    public int createBlog(String username, String subject, String description, String tags) throws SQLException {
+    // Create a new blog (with tags) and return its ID
+    public int createBlog(String username, String subject, String description, String tags)
+            throws SQLException {
+
         // Check limit first
         if (!canUserPostBlog(username)) {
             throw new SQLException("You have reached the maximum limit of 2 blogs per day.");
@@ -54,7 +55,6 @@ public class BlogService {
                     blogStmt.setString(3, description);
                     blogStmt.executeUpdate();
 
-                    // Get generated blog ID
                     try (ResultSet generatedKeys = blogStmt.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
                             blogId = generatedKeys.getInt(1);
@@ -91,10 +91,8 @@ public class BlogService {
             }
         }
     }
-<<<<<<< Updated upstream
-    
-=======
 
+    // Get a single blog (with tags) by ID – used in the comment screen
     public Blog getBlogById(int blogId) throws SQLException {
         String sql = """
                 SELECT b.username, b.subject, b.description,
@@ -105,8 +103,10 @@ public class BlogService {
                 WHERE b.blogid = ?
                 GROUP BY b.blogid, b.username, b.subject, b.description, b.post_date
                 """;
+
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, blogId);
             ResultSet rs = stmt.executeQuery();
 
@@ -124,9 +124,9 @@ public class BlogService {
         return null;
     }
 
->>>>>>> Stashed changes
+    // Today’s blog count for user (for the 2-per-day label)
     public int getTodayBlogCount(String username) throws SQLException {
-        String sql = "SELECT COUNT(*) as blog_count " +
+        String sql = "SELECT COUNT(*) AS blog_count " +
                      "FROM blogs " +
                      "WHERE username = ? AND DATE(post_date) = CURDATE()";
 
@@ -142,13 +142,15 @@ public class BlogService {
             return count;
         }
     }
-<<<<<<< Updated upstream
-}
-=======
 
-    // Phase 3 – item 1
+    // --------------------------------------------------------------------
+    // ADVANCED QUERIES (items 1–7)
+    // --------------------------------------------------------------------
+
+    // 1) Users who posted blogs with Tag X and Tag Y on the same day
     public List<String> getUsersWithTwoTagsSameDay(String tagX, String tagY) throws SQLException {
         List<String> users = new ArrayList<>();
+
         String sql = """
             SELECT DISTINCT b1.username
             FROM blogs b1
@@ -163,17 +165,21 @@ public class BlogService {
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setString(1, "%" + tagX + "%");
             stmt.setString(2, "%" + tagY + "%");
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                users.add(rs.getString("username"));
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    users.add(rs.getString("username"));
+                }
             }
         }
+
         return users;
     }
 
-    // Phase 3 – item 2
+    // 2) Top bloggers on a given date (most blogs that day)
     public List<String> getTopBloggersOnDate(String dateStr) throws SQLException {
         List<String> topUsers = new ArrayList<>();
 
@@ -195,27 +201,22 @@ public class BlogService {
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setString(1, dateStr);
             stmt.setString(2, dateStr);
-            ResultSet rs = stmt.executeQuery();
 
-            while (rs.next()) {
-                topUsers.add(rs.getString("username"));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    topUsers.add(rs.getString("username"));
+                }
             }
         }
 
         return topUsers;
     }
 
-    // ------------------------------------------------------------
-    // NEW METHODS – Phase 3 items 3–7
-    // ------------------------------------------------------------
-
-    /**
-     * Phase 3 – item 3
-     * List the users who are followed by BOTH users X and Y.
-     * Assumes a table: follows(follower, followee).
-     */
+    // 3) Users who are followed by BOTH X and Y
+    //    assumes table: follows(follower, followee)
     public List<String> getUsersFollowedByBoth(String userX, String userY) throws SQLException {
         List<String> result = new ArrayList<>();
 
@@ -244,10 +245,8 @@ public class BlogService {
         return result;
     }
 
-    /**
-     * Phase 3 – item 4
-     * Display all the users who never posted a blog.
-     */
+    // 4) Users who never posted a blog
+    //    assumes table: user(username, ...)
     public List<String> getUsersWhoNeverPostedBlog() throws SQLException {
         List<String> result = new ArrayList<>();
 
@@ -271,12 +270,7 @@ public class BlogService {
         return result;
     }
 
-    /**
-     * Phase 3 – item 5
-     * List all the blogs of user X such that
-     * ALL comments on those blogs are positive (and at least one comment).
-     * Returns strings like "Blog 5 - Subject text".
-     */
+    // 5) Blogs of user X where ALL comments are positive (and at least 1 comment)
     public List<String> getBlogsAllPositiveCommentsForUser(String username) throws SQLException {
         List<String> result = new ArrayList<>();
 
@@ -307,10 +301,7 @@ public class BlogService {
         return result;
     }
 
-    /**
-     * Phase 3 – item 6
-     * Display all the users who posted SOME comments, and every comment they posted is negative.
-     */
+    // 6) Users who posted SOME comments and every comment is negative
     public List<String> getUsersWithOnlyNegativeComments() throws SQLException {
         List<String> result = new ArrayList<>();
 
@@ -334,11 +325,8 @@ public class BlogService {
         return result;
     }
 
-    /**
-     * Phase 3 – item 7
-     * Display users such that all blogs they posted never received any negative comments.
-     * They must have posted at least one blog. Blogs with only positive or no comments are allowed.
-     */
+    // 7) Users such that all blogs they posted never received any negative comments
+    //    (at least one blog; blogs with only positive or no comments are OK)
     public List<String> getUsersWhoseBlogsNeverGotNegative() throws SQLException {
         List<String> result = new ArrayList<>();
 
@@ -363,4 +351,3 @@ public class BlogService {
         return result;
     }
 }
->>>>>>> Stashed changes
